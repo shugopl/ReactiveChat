@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: ReactiveChat
+
+server:
+  port: 8080
