@@ -14,10 +14,10 @@ public class WebSocketConfig {
 
     @Bean
     public SimpleUrlHandlerMapping handlerMapping(EchoHandler echoHandler) {
-        return new SimpleUrlHandlerMapping() {{
-            setOrder(10);
-            setUrlMap(Map.of("/ws/echo", (WebSocketHandler) echoHandler));
-        }};
+        SimpleUrlHandlerMapping handlerMapping = new SimpleUrlHandlerMapping();
+        handlerMapping.setOrder(10);
+        handlerMapping.setUrlMap(Map.of("/ws/echo", (WebSocketHandler) echoHandler));
+        return handlerMapping;
     }
 
     @Bean
