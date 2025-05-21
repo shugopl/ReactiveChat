@@ -1,43 +1,45 @@
 package pl.com.shugo.reactivechat;
 
+
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
 import org.springframework.web.reactive.socket.client.WebSocketClient;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.ReplayProcessor;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import java.net.URI;
-import java.time.Duration;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ReactiveChatApplicationTests {
 
+    @LocalServerPort
+    private int port;
+
+    private final WebSocketClient webSocketClient = new ReactorNettyWebSocketClient();
 
     @Test
-    public void chatServerShouldEchoMessages() {
-        int count = 3;
+    void echoEndpointShouldReturnPrefixedMessage() {
 
-        Flux<String> input = Flux.range(1, count).map(i -> "msg-" + i);
-        ReplayProcessor<String> output = ReplayProcessor.create(count);
+        URI uri = URI.create("ws://localhost:" + port + "/ws/echo");
 
-        WebSocketClient client = new ReactorNettyWebSocketClient();
+        Flux<String> replies = Flux.create(sink ->
+                webSocketClient.execute(uri, session ->
+                        session.send(Mono.just(session.textMessage("Hello World!")))
+                                .thenMany(session.receive()
+                                        .map(WebSocketMessage::getPayloadAsText)
+                                        .doOnNext(sink::next))
+                                .then()
+                ).subscribe());
 
-        client.execute(
-                URI.create("ws://localhost:8080/websocket/chat"),
-                session -> session
-                        .send(input.map(session::textMessage))
-                        .thenMany(session.receive().take(count).map(WebSocketMessage::getPayloadAsText))
-                        .subscribeWith(output)
-                        .then()
-        ).block(Duration.ofSeconds(5));
-
-        List<String> sent = input.collectList().block();
-        List<String> received = output.collectList().block();
-
-        assertEquals(sent, received);
+        StepVerifier.create(replies)
+                .expectNext("Echo: Hello World!")
+                .thenCancel()
+                .verify();
     }
-
 }
+
+

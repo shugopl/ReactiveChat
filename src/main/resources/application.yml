@@ -2,5 +2,15 @@ spring:
   application:
     name: ReactiveChat
 
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/reactive_chat
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
 server:
   port: 8080
